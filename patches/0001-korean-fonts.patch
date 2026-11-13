@@ -1,0 +1,169 @@
+diff --git a/packages/core/src/runtime-assets/install.ts b/packages/core/src/runtime-assets/install.ts
+index 2465d65..3beb50d 100644
+--- a/packages/core/src/runtime-assets/install.ts
++++ b/packages/core/src/runtime-assets/install.ts
+@@ -2,8 +2,13 @@ import caveatVariable from '#core-assets/CaveatVariable.woff2?url'
+ import interSemiBold from '#core-assets/Inter-SemiBold.ttf?url'
+ import interVariableItalic from '#core-assets/InterVariable-Italic.ttf?url'
+ import interVariable from '#core-assets/InterVariable.ttf?url'
++import nanumMyeongjoBold from '#core-assets/NanumMyeongjo-Bold.ttf?url'
++import nanumMyeongjoExtraBold from '#core-assets/NanumMyeongjo-ExtraBold.ttf?url'
++import nanumMyeongjo from '#core-assets/NanumMyeongjo-Regular.ttf?url'
+ import notoNaskhArabic from '#core-assets/NotoNaskhArabic-Regular.ttf?url'
++import notoSansKR from '#core-assets/NotoSansKR-Variable.ttf?url'
+ import emojiMetrics from '#core-assets/OpenPencilEmojiMetrics-Regular.ttf?url'
++import pretendard from '#core-assets/PretendardVariable.woff2?url'
+ 
+ /**
+  * Points Core at the files it loads at run time, imported as Vite `?url` assets so a Vite build
+@@ -23,8 +28,13 @@ const FONT_URLS: Record<string, string> = {
+   'Inter-SemiBold.ttf': interSemiBold,
+   'InterVariable-Italic.ttf': interVariableItalic,
+   'InterVariable.ttf': interVariable,
++  'NanumMyeongjo-Bold.ttf': nanumMyeongjoBold,
++  'NanumMyeongjo-ExtraBold.ttf': nanumMyeongjoExtraBold,
++  'NanumMyeongjo-Regular.ttf': nanumMyeongjo,
+   'NotoNaskhArabic-Regular.ttf': notoNaskhArabic,
+-  'OpenPencilEmojiMetrics-Regular.ttf': emojiMetrics
++  'NotoSansKR-Variable.ttf': notoSansKR,
++  'OpenPencilEmojiMetrics-Regular.ttf': emojiMetrics,
++  'PretendardVariable.woff2': pretendard
+ }
+ 
+ setCanvasKitLocator(() => canvasKit)
+diff --git a/packages/core/src/text/fallbacks.ts b/packages/core/src/text/fallbacks.ts
+index 3b36e2d..30ea1a8 100644
+--- a/packages/core/src/text/fallbacks.ts
++++ b/packages/core/src/text/fallbacks.ts
+@@ -123,7 +123,14 @@ export const ARABIC_LOCAL_FALLBACK_FAMILIES = [
+ 
+ export const ARABIC_REMOTE_FALLBACK_FAMILIES = ['Noto Naskh Arabic', 'Noto Sans Arabic']
+ 
++/** The bundled Hangul face, tried before the system's, so Korean draws offline on every platform. */
++export const BUNDLED_HANGUL_FALLBACK_FAMILY = 'Pretendard'
++
+ export function cjkLocalFallbackFamilies(userAgent?: string): string[] {
++  return [BUNDLED_HANGUL_FALLBACK_FAMILY, ...platformCJKFallbackFamilies(userAgent)]
++}
++
++function platformCJKFallbackFamilies(userAgent?: string): string[] {
+   if (!userAgent) return [...CJK_FALLBACK_FAMILIES_LINUX]
+   if (userAgent.includes('Mac')) return [...CJK_FALLBACK_FAMILIES_MACOS]
+   if (userAgent.includes('Windows')) return [...CJK_FALLBACK_FAMILIES_WINDOWS]
+@@ -158,11 +165,11 @@ function cjkScriptLocalFallbackFamilies(
+         linux: ['Noto Sans CJK JP', 'Noto Sans CJK SC', 'Droid Sans Fallback']
+       })
+     case 'cjk-kr':
+-      return platformCJKFamilies(userAgent, {
++      return [BUNDLED_HANGUL_FALLBACK_FAMILY, ...platformCJKFamilies(userAgent, {
+         mac: ['Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans'],
+         windows: ['Malgun Gothic', 'Microsoft YaHei', 'Yu Gothic'],
+         linux: ['Noto Sans CJK KR', 'Noto Sans CJK SC', 'Droid Sans Fallback']
+-      })
++      })]
+     default:
+       return platformCJKFamilies(userAgent, {
+         mac: ['PingFang SC', 'Heiti SC', 'PingFang TC', 'Hiragino Sans'],
+diff --git a/packages/core/src/text/font/bundled.ts b/packages/core/src/text/font/bundled.ts
+index c21f819..ee737f8 100644
+--- a/packages/core/src/text/font/bundled.ts
++++ b/packages/core/src/text/font/bundled.ts
+@@ -21,9 +21,23 @@ const BUNDLED_FONTS: Record<string, string> = {
+     INTER_WEIGHTS.map((weight) => [`Inter|${weight} Italic`, '/InterVariable-Italic.ttf'])
+   ),
+   'Noto Naskh Arabic|Regular': '/NotoNaskhArabic-Regular.ttf',
+-  'OpenPencil Emoji Metrics|Regular': '/OpenPencilEmojiMetrics-Regular.ttf'
++  'OpenPencil Emoji Metrics|Regular': '/OpenPencilEmojiMetrics-Regular.ttf',
++  // Korean: Pretendard is also the Hangul fallback (its variable file defaults to Regular and its
++  // Latin follows Inter); Noto Sans KR and Nanum Myeongjo are there to pick.
++  ...Object.fromEntries(
++    INTER_WEIGHTS.map((weight) => [`Pretendard|${weight}`, '/PretendardVariable.woff2'])
++  ),
++  ...Object.fromEntries(
++    INTER_WEIGHTS.map((weight) => [`Noto Sans KR|${weight}`, '/NotoSansKR-Variable.ttf'])
++  ),
++  'Nanum Myeongjo|Regular': '/NanumMyeongjo-Regular.ttf',
++  'Nanum Myeongjo|Bold': '/NanumMyeongjo-Bold.ttf',
++  'Nanum Myeongjo|ExtraBold': '/NanumMyeongjo-ExtraBold.ttf'
+ }
+ 
++/** Bundled families listed in the font picker, so they can be chosen without the network. */
++const PICKABLE_BUNDLED_FAMILIES = ['Pretendard', 'Noto Sans KR', 'Nanum Myeongjo']
++
+ /**
+  * Maps a bundled font's file name (`InterVariable.ttf`) to the URL a browser fetches it from.
+  * Mirrors CanvasKit's `locateFile`; the default expects the host to serve
+@@ -48,6 +62,11 @@ export class BundledFonts {
+     return BUNDLED_FONTS[`${family}|${style}`]
+   }
+ 
++  /** The bundled families the font picker offers besides the default one. */
++  pickableFamilies(): string[] {
++    return [...PICKABLE_BUNDLED_FAMILIES]
++  }
++
+   /** The style keys a family's bundled faces are loaded as. */
+   styles(family: string): string[] {
+     return Object.keys(BUNDLED_FONTS)
+diff --git a/packages/core/src/text/font/manager.ts b/packages/core/src/text/font/manager.ts
+index 4e18c34..b46f5ae 100644
+--- a/packages/core/src/text/font/manager.ts
++++ b/packages/core/src/text/font/manager.ts
+@@ -340,6 +340,8 @@ export class FontManager {
+     )
+     const byFamily = new Map<string, FontFamilyOption>()
+     byFamily.set(DEFAULT_FONT_FAMILY, { family: DEFAULT_FONT_FAMILY, source: 'bundled' })
++    for (const family of this.bundled.pickableFamilies())
++      byFamily.set(family, { family, source: 'bundled' })
+     for (const { provider, families } of webFontFamilies) {
+       for (const family of families) {
+         if (!byFamily.has(family)) byFamily.set(family, { family, source: provider })
+@@ -359,6 +361,21 @@ export class FontManager {
+     return this.bundled.fetch(url)
+   }
+ 
++  /**
++   * A bundled face a fallback list names, such as the Hangul one, so the script draws offline and
++   * without the system's fonts; `null` for a family not bundled or a file the host does not serve.
++   */
++  private async readBundledFallback(family: string): Promise<ArrayBuffer | null> {
++    const file = this.bundled.file(family, 'Regular')
++    if (!file) return null
++    try {
++      return await this.fetchBundledFont(file)
++    } catch (e) {
++      console.warn(`Bundled fallback font load failed for "${family}":`, e)
++      return null
++    }
++  }
++
+   loadLocalFont(family: string, style = 'Regular'): Promise<ArrayBuffer | null> {
+     return withHarfBuzz(this.findLocalOrBundledFont(family, style))
+   }
+@@ -801,7 +818,9 @@ export class FontManager {
+       if (installed && missing().length === 0) break
+       signal?.throwIfAborted()
+       const buffer =
+-        (await this.loadHostFont(family, 'Regular')) ?? (await this.localFonts.read(family))
++        (await this.loadHostFont(family, 'Regular')) ??
++        (await this.localFonts.read(family)) ??
++        (await this.readBundledFallback(family))
+       signal?.throwIfAborted()
+       if (buffer && this.registerAndCache(family, 'Regular', buffer, 'fallback')) {
+         if (!targetFamilies.includes(family)) targetFamilies.push(family)
+diff --git a/packages/core/tests/text/fonts/fallbacks.test.ts b/packages/core/tests/text/fonts/fallbacks.test.ts
+index 2f097a9..0c32c0c 100644
+--- a/packages/core/tests/text/fonts/fallbacks.test.ts
++++ b/packages/core/tests/text/fonts/fallbacks.test.ts
+@@ -32,7 +32,11 @@ describe('font fallback manifest', () => {
+     expect(fontFallbackEntry('cjk-jp', 'Mozilla/5.0 (Windows NT 10.0)').localFamilies[0]).toBe(
+       'Yu Gothic'
+     )
++    // The bundled Hangul face comes first, so Korean draws offline, then the system's.
+     expect(fontFallbackEntry('cjk-kr', 'Mozilla/5.0 (Windows NT 10.0)').localFamilies[0]).toBe(
++      'Pretendard'
++    )
++    expect(fontFallbackEntry('cjk-kr', 'Mozilla/5.0 (Windows NT 10.0)').localFamilies[1]).toBe(
+       'Malgun Gothic'
+     )
+   })

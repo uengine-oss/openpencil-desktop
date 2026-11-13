@@ -1,0 +1,76 @@
+{
+  "name": "openpencil-kr",
+  "productName": "OpenPencil KR",
+  "version": "0.17.0-kr.1",
+  "description": "OpenPencil(오픈소스 Figma 호환 디자인 편집기)의 한글 글꼴 내장 Electron 빌드",
+  "author": "uEngine <help@uengine.org>",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "web": "bash scripts/build-web.sh",
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist": "electron-builder --mac --win"
+  },
+  "devDependencies": {
+    "electron": "45.3.2",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "org.uengine.openpencil-kr",
+    "productName": "OpenPencil KR",
+    "copyright": "OpenPencil © 2026 Danila Poyarkov and OpenPencil contributors · packaging © 2026 uEngine",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**",
+      "web/**",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "NOTICE.md", "to": "NOTICE.md" },
+      { "from": "LICENSE", "to": "LICENSE" },
+      { "from": "fonts", "to": "fonts-licenses", "filter": ["*.txt"] }
+    ],
+    "asarUnpack": [],
+    "afterPack": "build/after-pack.cjs",
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "icon": "build/icon.png",
+      "identity": null,
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] }
+      ],
+      "extendInfo": {
+        "CFBundleDisplayName": "OpenPencil KR"
+      },
+      "artifactName": "OpenPencil-KR-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "OpenPencil KR ${version}"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "artifactName": "OpenPencil-KR-${version}-win-${arch}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpenPencil KR",
+      "uninstallDisplayName": "OpenPencil KR ${version}",
+      "unicode": true,
+      "installerLanguages": ["ko_KR", "en_US"],
+      "language": "1042"
+    }
+  }
+}
