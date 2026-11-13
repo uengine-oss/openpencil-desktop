@@ -46,6 +46,8 @@ if (process.env.OP_AI_URL) {
   results.aiConnect = await d.getByText(/Connected successfully|Could not reach|failed|error/i).first().textContent({ timeout: 60000 }).catch((e) => 'timeout ' + e.message.split('\n')[0]);
   await shot('00-ai-connected');
   await d.getByRole('button', { name: 'Save model' }).click(); await sleep(1000);
+  // 저장된 출력 한도(사용자 지정 모델이 1024 로 저장되면 추론 모델은 빈 답을 낸다)
+  results.savedMaxOutputTokens = await p.evaluate(() => JSON.parse(localStorage.getItem('open-pencil:ai-model-settings') || '{}').models?.map((m) => m.maxOutputTokens));
   await p.getByRole('button', { name: 'Done' }).click({ timeout: 2000 }).catch(() => {});
   await p.keyboard.press('Escape'); await sleep(800);
 }

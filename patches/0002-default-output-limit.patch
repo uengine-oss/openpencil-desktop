@@ -1,0 +1,16 @@
+diff --git a/src/app/ai/models/store.ts b/src/app/ai/models/store.ts
+index f670ef2..dda6994 100644
+--- a/src/app/ai/models/store.ts
++++ b/src/app/ai/models/store.ts
+@@ -203,7 +203,10 @@ function legacySettings(): AIModelSettings {
+   const name = displayModel
+     ? provider?.models.find((model) => model.id === displayModel)?.name || displayModel
+     : 'Design model'
+-  const maxOutputTokens = Number(readLegacyAIModelStorage('ai-max-output-tokens'))
++  // An absent key reads as null, which `Number` turns into 0 and the store then raises to its
++  // 1024 floor: a fresh install would save every custom model with a 1024-token reply.
++  const legacyMaxOutputTokens = readLegacyAIModelStorage('ai-max-output-tokens')
++  const maxOutputTokens = legacyMaxOutputTokens ? Number(legacyMaxOutputTokens) : Number.NaN
+   const curatedCapabilities = customModelID ? null : curatedModelCapabilities(providerID, modelID)
+   return {
+     version: 1,

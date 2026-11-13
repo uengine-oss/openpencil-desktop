@@ -17,8 +17,8 @@ fi
 cd upstream
 git fetch -q origin "$REF" 2>/dev/null || git fetch -q origin
 git checkout -q --force "$REF"
-git clean -qfd packages/core/assets packages/core/src packages/core/tests
-git apply "$D/patches/0001-korean-fonts.patch"
+git clean -qfd packages/core/assets packages/core/src packages/core/tests src
+for f in "$D"/patches/*.patch; do git apply "$f"; done
 cp "$D"/fonts/*.ttf "$D"/fonts/*.woff2 "$D"/fonts/*-OFL.txt packages/core/assets/
 
 bun install
